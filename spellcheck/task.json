@@ -1,25 +1,15 @@
 {
-   "id": "2fd5ddb0-8333-452e-a158-0b7dc16c9fd4",
+   "id": "2fd5deb0-8333-452e-a158-0b7dc16c9fd4",
    "name": "spellcheck",
    "friendlyName": "Spellcheck",
-   "description": "Spellcheck specified files",
+   "description": "Spellcheck the specified files",
    "helpMarkDown": "[More Information](https://github.com/ostreifel/spellcheck-task/blob/master/overview.md)",
    "category": "Test",
-   "visibility": [
-       "Build",
-       "Release",
-       "Preview"
-   ],
-   "runsOn": [
-       "Agent",
-       "DeploymentGroup",
-       "Server"
-   ],
    "author": "Otto Streifel",
    "version": {
-      "Major": 1,
+      "Major": 2,
       "Minor": 1,
-      "Patch": 1
+      "Patch": 5
    },
    "demands": [],
    "inputs": [
