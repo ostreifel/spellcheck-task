@@ -1,0 +1,37 @@
+{
+   "id": "2fd5ddb0-8333-452e-a158-0b7dc16c9fd4",
+   "name": "spellcheck",
+   "friendlyName": "Spellcheck",
+   "description": "Spellcheck specified files",
+   "helpMarkDown": "[More Information](https://url.to/yourmarkdown)",
+   "category": "Build",
+   "visibility": ["Build"],
+   "author": "",
+   "version": {
+      "Major": 1,
+      "Minor": 0,
+      "Patch": 0
+   },
+   "demands": [],
+   "inputs": [
+      {
+         "name": "variable1",
+         "type": "filePath",
+         "label": "Path to Solution File",
+         "defaultValue": "",
+         "required": true
+      },
+      {
+         "name": "variable2",
+         "type": "string",
+         "label": "Sample text variable",
+         "defaultValue": "",
+         "required": false,
+         "helpMarkDown": "This will give you a hover-over tooltip"
+      }
+   ],
+   "instanceNameFormat": "spellcheck",
+   "execution":
+    {"Node":{"target":"spellcheck.js"}}
+   
+}
