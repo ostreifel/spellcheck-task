@@ -3,14 +3,14 @@
    "name": "spellcheck",
    "friendlyName": "Spellcheck",
    "description": "Spellcheck specified files",
-   "helpMarkDown": "[More Information](https://url.to/yourmarkdown)",
+   "helpMarkDown": "[More Information](https://github.com/ostreifel/spellcheck-task/blob/master/overview.md)",
    "category": "Test",
    "visibility": ["Test"],
    "author": "Otto Streifel",
    "version": {
       "Major": 1,
       "Minor": 0,
-      "Patch": 0
+      "Patch": 2
    },
    "demands": [],
    "inputs": [

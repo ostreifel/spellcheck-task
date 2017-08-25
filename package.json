@@ -1,8 +1,8 @@
 {
   "scripts": {
-    "package-dev": "npm run clean  && npm run compile  && tfx extension create  --rev-version --overrides-file dev.json",
+    "package-dev": "npm run clean  && npm run compile  && tfx extension create --rev-version --overrides-file dev.json",
     "package": "npm run clean  && npm run compile  && tfx extension create  --rev-version",
-    "gallery-publish": "tfx extension publish --rev-version",
+    "gallery-publish-dev": "npm run clean && npm run compile && tfx extension publish --rev-version --overrides-file dev.json",
     "clean": "rimraf ./*.vsix",
     "compile": "tsc -p .",
     "install-task-lib": "cd spellcheck && npm install --save-dev"
