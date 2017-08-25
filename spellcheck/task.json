@@ -4,9 +4,9 @@
    "friendlyName": "Spellcheck",
    "description": "Spellcheck specified files",
    "helpMarkDown": "[More Information](https://url.to/yourmarkdown)",
-   "category": "Build",
-   "visibility": ["Build"],
-   "author": "",
+   "category": "Test",
+   "visibility": ["Test"],
+   "author": "Otto Streifel",
    "version": {
       "Major": 1,
       "Minor": 0,
