@@ -15,9 +15,9 @@
    "demands": [],
    "inputs": [
       {
-         "name": "variable1",
+         "name": "files",
          "type": "filePath",
-         "label": "Path to Solution File",
+         "label": "Files to check",
          "defaultValue": "",
          "required": true
       },
