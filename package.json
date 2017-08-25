@@ -8,6 +8,7 @@
     "install-task-lib": "cd spellcheck && npm install --save-dev"
   },
   "devDependencies": {
+    "@types/glob": "^5.0.32",
     "@types/node": "^8.0.7",
     "tfx-cli": "^0.4.5",
     "typescript": "2.3.4"
