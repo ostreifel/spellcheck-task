@@ -1,21 +1,21 @@
 import * as fs from "fs";
 import * as glob from "glob";
+import * as path from "path";
 import tl = require("vsts-task-lib/task");
-
-// npm install vsts-task-lib
-
-// get task parameters
-const fileGlob: string = tl.getPathInput("files", false, true);
-const variable2: string = tl.getInput("variable2", true);
 
 async function run(): Promise<void> {
     try {
+        // get task parameters
+        const fileGlob: string = tl.getInput("files", true);
+        const includeRegexString: string = tl.getInput("includeRegexString", false);
+
         // do your actions
-        tl.debug("fileGlob:" + fileGlob);
-        tl.debug("variable2:" + variable2);
-        // glob.
+        console.log("fileGlob:" + fileGlob);
+        console.log("includeRegexString:" + includeRegexString);
+        tl.setResult(tl.TaskResult.Succeeded, "No spelling errors");
 
     } catch (err) {
+        console.log("err", err);
         tl.setResult(tl.TaskResult.Failed, err.message);
     }
 }

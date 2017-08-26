@@ -4,7 +4,7 @@
         "module": "commonjs"
     },
     "exclude": [
-    "node_modules",
-    "spellcheck/node_modules"
-  ]
+        "node_modules",
+        "spellcheck/node_modules"
+    ]
 }
