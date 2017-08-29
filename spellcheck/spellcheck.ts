@@ -34,12 +34,18 @@ function spellcheck(corpusText: string): IMisspelling[] {
     return errors.map((e) => toMisspelling(e, corpusText));
 }
 
+function scrubText(text: string): string {
+    // TODO use library here
+    return text
+        .replace(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g, "");
+}
+
 async function checkFile(filePath: string): Promise<IFileErrors> {
     const buffer = fs.readFileSync(filePath);
     const {encoding} = detectEncoding(buffer);
     const fileText = fs.readFileSync(filePath, {encoding});
     tl.debug(`${filePath} encoding ${encoding}, ${fileText.length} bytes`);
-    const misspellings = spellcheck(fileText);
+    const misspellings = spellcheck(scrubText(fileText));
     return {filePath, misspellings};
 }
 
