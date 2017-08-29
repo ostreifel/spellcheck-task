@@ -3,28 +3,44 @@ import * as glob from "glob";
 import * as Q from "q";
 import tl = require("vsts-task-lib/task");
 import jschardet = require("jschardet");
+import SpellChecker = require("spellchecker");
 
 interface IFileErrors {
     readonly filePath: string;
     readonly misspellings: IMisspelling[];
 }
 interface IMisspelling {
-    readonly line: string;
-    readonly column: string;
+    readonly start: number;
+    readonly end: number;
     readonly text: string;
+}
+interface IDetectedMisspelling {
+    readonly start: number;
+    readonly end: number;
 }
 
 function detectEncoding(buffer: Buffer): { encoding: string, confidence: number } {
     return jschardet.detect(buffer);
 }
 
+function toMisspelling({start, end}: IDetectedMisspelling, corpusText: string): IMisspelling {
+    return {start, end, text: corpusText.substr(start, end - start)};
+}
+
+// npm install --global --production windows-build-tools
+
+function spellcheck(corpusText: string): IMisspelling[] {
+    const errors: IDetectedMisspelling[] = SpellChecker.checkSpelling(corpusText);
+    return errors.map((e) => toMisspelling(e, corpusText));
+}
+
 async function checkFile(filePath: string): Promise<IFileErrors> {
     const buffer = fs.readFileSync(filePath);
     const {encoding} = detectEncoding(buffer);
-    console.log(`${filePath} encoding ${encoding}`);
     const fileText = fs.readFileSync(filePath, {encoding});
-    console.log(`filePath ${filePath}\n${fileText}`);
-    return {filePath, misspellings: []};
+    tl.debug(`${filePath} encoding ${encoding}, ${fileText.length} bytes`);
+    const misspellings = spellcheck(fileText);
+    return {filePath, misspellings};
 }
 
 async function processErrors(errors: IFileErrors[]): Promise<void> {
@@ -37,8 +53,8 @@ async function processErrors(errors: IFileErrors[]): Promise<void> {
         failed = tl.TaskResult.Failed;
         errorCount += misspellings.length;
         tl.error(`Misspellings in ${filePath}`);
-        for (const {line, column, text} of misspellings) {
-            tl.error(`${line}:${column} Misspelling '${text}'`);
+        for (const {start, end, text} of misspellings) {
+            tl.error(`${start}:${end} Misspelling '${text}'`);
         }
     }
     tl.setResult(failed, `${errorCount} misspellings detected`);
