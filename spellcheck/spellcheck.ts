@@ -5,6 +5,13 @@ import tl = require("vsts-task-lib/task");
 import jschardet = require("jschardet");
 import SpellChecker = require("spellchecker");
 
+// TODO create configuration for this
+{
+    SpellChecker.add("TODO");
+    SpellChecker.add("readme");
+    SpellChecker.add("Chakra");
+}
+
 interface IFileErrors {
     readonly filePath: string;
     readonly misspellings: IMisspelling[];
@@ -28,7 +35,7 @@ function toMisspelling({start, end}: IDetectedMisspelling, corpusText: string): 
 }
 
 // npm install --global --production windows-build-tools
-
+// TODO this requires windows
 function spellcheck(corpusText: string): IMisspelling[] {
     const errors: IDetectedMisspelling[] = SpellChecker.checkSpelling(corpusText);
     return errors.map((e) => toMisspelling(e, corpusText));
