@@ -6,6 +6,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "glob": "^7.1.2",
+    "jschardet": "^1.5.1",
     "vsts-task-lib": "^2.0.5"
   },
   "devDependencies": {

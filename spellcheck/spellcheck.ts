@@ -1,6 +1,8 @@
+import * as fs from "fs";
 import * as glob from "glob";
 import * as Q from "q";
 import tl = require("vsts-task-lib/task");
+import jschardet = require("jschardet");
 
 interface IFileErrors {
     readonly filePath: string;
@@ -12,7 +14,16 @@ interface IMisspelling {
     readonly text: string;
 }
 
+function detectEncoding(buffer: Buffer): { encoding: string, confidence: number } {
+    return jschardet.detect(buffer);
+}
+
 async function checkFile(filePath: string): Promise<IFileErrors> {
+    const buffer = fs.readFileSync(filePath);
+    const {encoding} = detectEncoding(buffer);
+    console.log(`${filePath} encoding ${encoding}`);
+    const fileText = fs.readFileSync(filePath, {encoding});
+    console.log(`filePath ${filePath}\n${fileText}`);
     return {filePath, misspellings: []};
 }
 
