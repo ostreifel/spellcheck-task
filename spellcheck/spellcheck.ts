@@ -17,34 +17,89 @@ interface IFileErrors {
     readonly misspellings: IMisspelling[];
 }
 interface IMisspelling {
-    readonly start: number;
-    readonly end: number;
+    readonly line: number;
+    readonly column: number;
     readonly text: string;
 }
 interface IDetectedMisspelling {
     readonly start: number;
     readonly end: number;
 }
+interface ILineBreaks extends Array<number> {}
+interface ISkipTexts extends Array<{
+    start: number;
+    end: number;
+}> {}
 
 function detectEncoding(buffer: Buffer): { encoding: string, confidence: number } {
     return jschardet.detect(buffer);
 }
 
-function toMisspelling({start, end}: IDetectedMisspelling, corpusText: string): IMisspelling {
-    return {start, end, text: corpusText.substr(start, end - start)};
+function findLineBreaks(text: string): ILineBreaks {
+    const breaks: ILineBreaks = [];
+    for (let i = 0; i < text.length; i++) {
+        if (text.charAt(i) === "\n") {
+            breaks.push(i);
+        }
+    }
+    return breaks;
+}
+
+function posToLineColumn(linebreaks: ILineBreaks, pos: number): {line: number, column: number} {
+    for (let i = linebreaks.length - 1; i >= 0; i--) {
+        const linePos = linebreaks[i];
+        if (linePos < pos) {
+            return {line: i + 1, column: pos - linePos + 1};
+        }
+    }
+    return { line: 1, column: pos + 1 };
+}
+
+function toMisspellings(detected: IDetectedMisspelling[], corpusText: string): IMisspelling[] {
+    const linebreaks = findLineBreaks(corpusText);
+    const misspellings: IMisspelling[] = [];
+    for (const {start, end} of detected) {
+        const {line, column} = posToLineColumn(linebreaks, start);
+        misspellings.push(
+            {line, column, text: corpusText.substr(start, end - start)},
+        );
+    }
+    return misspellings;
 }
 
 // npm install --global --production windows-build-tools
-// TODO this requires windows
-function spellcheck(corpusText: string): IMisspelling[] {
-    const errors: IDetectedMisspelling[] = SpellChecker.checkSpelling(corpusText);
-    return errors.map((e) => toMisspelling(e, corpusText));
+
+function filterErrors(errors: IDetectedMisspelling[], corpusText: string): IDetectedMisspelling[] {
+    const skipTexts = findTextToSkip(corpusText);
+    return errors.filter((e) => {
+        for (const {start, end} of skipTexts) {
+            if (e.start >= start && e.end <= end) {
+                return false;
+            }
+        }
+        return true;
+    });
 }
 
-function scrubText(text: string): string {
+// TODO this requires windows
+function spellcheck(corpusText: string): IMisspelling[] {
+
+    const errors: IDetectedMisspelling[] = SpellChecker.checkSpelling(corpusText);
+    const filteredErrors = filterErrors(errors, corpusText);
+    const misspellings = toMisspellings(filteredErrors, corpusText);
+    return misspellings;
+}
+
+function findTextToSkip(text: string): ISkipTexts {
     // TODO use library here
-    return text
-        .replace(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g, "");
+    const skipTexts: ISkipTexts = [];
+    const regex = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g;
+    let match: RegExpExecArray | null;
+    // tslint:disable-next-line:no-conditional-assignment
+    while ((match = regex.exec(text)) !== null) {
+        skipTexts.push({start: match.index, end: match.index + match[0].length});
+    }
+    return skipTexts;
 }
 
 async function checkFile(filePath: string): Promise<IFileErrors> {
@@ -52,7 +107,8 @@ async function checkFile(filePath: string): Promise<IFileErrors> {
     const {encoding} = detectEncoding(buffer);
     const fileText = fs.readFileSync(filePath, {encoding});
     tl.debug(`${filePath} encoding ${encoding}, ${fileText.length} bytes`);
-    const misspellings = spellcheck(scrubText(fileText));
+
+    const misspellings = spellcheck(fileText);
     return {filePath, misspellings};
 }
 
@@ -66,8 +122,8 @@ async function processErrors(errors: IFileErrors[]): Promise<void> {
         failed = tl.TaskResult.Failed;
         errorCount += misspellings.length;
         tl.error(`Misspellings in ${filePath}`);
-        for (const {start, end, text} of misspellings) {
-            tl.error(`${start}:${end} Misspelling '${text}'`);
+        for (const {line, column, text} of misspellings) {
+            tl.error(`${line}:${column} Misspelling '${text}'`);
         }
     }
     tl.setResult(failed, `${errorCount} misspellings detected`);
@@ -77,11 +133,8 @@ async function run(): Promise<void> {
     try {
         // get task parameters
         const fileGlob: string = tl.getInput("files", true);
-        const includeRegexString: string = tl.getInput("includeRegexString", false);
+        // const includeRegexString: string = tl.getInput("includeRegexString", false);
 
-        // do your actions
-        console.log("fileGlob:" + fileGlob);
-        console.log("includeRegexString:" + includeRegexString);
         tl.setResult(tl.TaskResult.Succeeded, "No spelling errors");
         const files = glob.sync(fileGlob);
 
