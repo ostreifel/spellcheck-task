@@ -25,42 +25,30 @@ interface IDetectedMisspelling {
     readonly start: number;
     readonly end: number;
 }
-interface ILineBreaks extends Array<number> {}
-
-interface ITextSection {
-    start: number;
-    end: number;
-}
-
-function detectEncoding(buffer: Buffer): { encoding: string, confidence: number } {
-    return jschardet.detect(buffer);
-}
-
-function findLineBreaks(text: string): ILineBreaks {
-    const breaks: ILineBreaks = [];
-    for (let i = 0; i < text.length; i++) {
-        if (text.charAt(i) === "\n") {
-            breaks.push(i);
-        }
-    }
-    return breaks;
-}
-
-function posToLineColumn(linebreaks: ILineBreaks, pos: number): {line: number, column: number} {
-    for (let i = linebreaks.length - 1; i >= 0; i--) {
-        const linePos = linebreaks[i];
-        if (linePos < pos) {
-            return {line: i + 1, column: pos - linePos + 1};
-        }
-    }
-    return { line: 1, column: pos + 1 };
-}
-
 function toMisspellings(detected: IDetectedMisspelling[], corpusText: string): IMisspelling[] {
-    const linebreaks = findLineBreaks(corpusText);
+    interface ILineBreaks extends Array<number> {}
+    function findLineBreaks(text: string): ILineBreaks {
+        const breaks: ILineBreaks = [];
+        for (let i = 0; i < text.length; i++) {
+            if (text.charAt(i) === "\n") {
+                breaks.push(i);
+            }
+        }
+        return breaks;
+    }
+    function posToLineColumn(linebreaks: ILineBreaks, pos: number): {line: number, column: number} {
+        for (let i = linebreaks.length - 1; i >= 0; i--) {
+            const linePos = linebreaks[i];
+            if (linePos < pos) {
+                return {line: i + 1, column: pos - linePos + 1};
+            }
+        }
+        return { line: 1, column: pos + 1 };
+    }
+    const textLineBreaks = findLineBreaks(corpusText);
     const misspellings: IMisspelling[] = [];
     for (const {start, end} of detected) {
-        const {line, column} = posToLineColumn(linebreaks, start);
+        const {line, column} = posToLineColumn(textLineBreaks, start);
         misspellings.push(
             {line, column, text: corpusText.substr(start, end - start)},
         );
@@ -71,6 +59,41 @@ function toMisspellings(detected: IDetectedMisspelling[], corpusText: string): I
 // npm install --global --production windows-build-tools
 
 function filterErrors(errors: IDetectedMisspelling[], corpusText: string): IDetectedMisspelling[] {
+
+    interface ITextSection {
+        start: number;
+        end: number;
+    }
+
+    function findRegexMatches(text: string, search: string | null): ITextSection[] | null;
+    function findRegexMatches(text: string, search: RegExp): ITextSection[];
+    function findRegexMatches(text: string, search: RegExp | string | null): ITextSection[] | null {
+        if (!search)  {
+            return null;
+        }
+        const regex = search instanceof RegExp ? search : new RegExp(search, "g");
+        const regexMatches: ITextSection[] = [];
+        let match: RegExpExecArray | null;
+        // tslint:disable-next-line:no-conditional-assignment
+        while ((match = regex.exec(text)) !== null) {
+            regexMatches.push({start: match.index, end: match.index + match[0].length});
+        }
+        return regexMatches;
+    }
+    function findTextToInclude(text: string): ITextSection[] | null {
+        return findRegexMatches(
+            text,
+            tl.getInput("includeRegexString", false),
+        );
+    }
+
+    function findTextToSkip(text: string): ITextSection[] {
+        return findRegexMatches(
+            text,
+            /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g
+        );
+    }
+
     const skipTexts = findTextToSkip(corpusText);
     const includeTexts = findTextToInclude(corpusText);
     return errors.filter((e) => {
@@ -94,41 +117,15 @@ function filterErrors(errors: IDetectedMisspelling[], corpusText: string): IDete
 
 // TODO this requires windows
 function spellcheck(corpusText: string): IMisspelling[] {
-
     const errors: IDetectedMisspelling[] = SpellChecker.checkSpelling(corpusText);
     const filteredErrors = filterErrors(errors, corpusText);
     const misspellings = toMisspellings(filteredErrors, corpusText);
     return misspellings;
 }
-
-function findTextToInclude(text: string): ITextSection[] | null {
-    const includeRegexString: string = tl.getInput("includeRegexString", false);
-    if (!includeRegexString) {
-        return null;
-    }
-    const includeTexts: ITextSection[] = [];
-    const regex = new RegExp(includeRegexString, "g");
-    let match: RegExpExecArray | null;
-    // tslint:disable-next-line:no-conditional-assignment
-    while ((match = regex.exec(text)) !== null) {
-        includeTexts.push({start: match.index, end: match.index + match[0].length});
-    }
-    return includeTexts;
-}
-
-function findTextToSkip(text: string): ITextSection[] {
-    // TODO use library here
-    const skipTexts: ITextSection[] = [];
-    const regex = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g;
-    let match: RegExpExecArray | null;
-    // tslint:disable-next-line:no-conditional-assignment
-    while ((match = regex.exec(text)) !== null) {
-        skipTexts.push({start: match.index, end: match.index + match[0].length});
-    }
-    return skipTexts;
-}
-
 async function checkFile(filePath: string): Promise<IFileErrors> {
+    function detectEncoding(b: Buffer): { encoding: string, confidence: number } {
+        return jschardet.detect(b);
+    }
     const buffer = fs.readFileSync(filePath);
     const {encoding} = detectEncoding(buffer);
     const fileText = fs.readFileSync(filePath, {encoding});
