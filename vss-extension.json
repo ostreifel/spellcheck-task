@@ -1,7 +1,7 @@
 {
   "manifestVersion": 1,
   "id": "spellcheck-task",
-  "version": "0.1.106",
+  "version": "0.1.116",
   "name": "Spellcheck Task",
   "scopes": [],
   "description": "Spellcheck specified files",

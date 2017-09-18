@@ -33,12 +33,13 @@ function toMisspellings(detected: IDetectedMisspelling[], corpusText: string): I
         for (let i = linebreaks.length - 1; i >= 0; i--) {
             const linePos = linebreaks[i];
             if (linePos < pos) {
-                return {line: i + 1, column: pos - linePos + 1};
+                return {line: i + 2, column: pos - linePos};
             }
         }
         return { line: 1, column: pos + 1 };
     }
     const textLineBreaks = findLineBreaks(corpusText);
+    tl.debug(`linebreaks ${JSON.stringify(textLineBreaks)}`);
     const misspellings: IMisspelling[] = [];
     for (const {start, end} of detected) {
         const {line, column} = posToLineColumn(textLineBreaks, start);
@@ -89,9 +90,12 @@ function filterErrors(errors: IDetectedMisspelling[], corpusText: string): IDete
 
     const skipTexts = findTextToSkip(corpusText);
     const includeTexts = findTextToInclude(corpusText);
+    tl.debug(`Skip texts ${JSON.stringify(skipTexts)}`);
+    tl.debug(`Include texts ${JSON.stringify(includeTexts)}`);
+    tl.debug(`errors ${JSON.stringify(errors)}`);
     return errors.filter((e) => {
         for (const {start, end} of skipTexts) {
-            if (e.start >= start && e.end <= end) {
+            if (e.start >= start && e.end - 1 <= end) {
                 return false;
             }
         }
@@ -99,7 +103,7 @@ function filterErrors(errors: IDetectedMisspelling[], corpusText: string): IDete
             return true;
         }
         for (const {start, end} of includeTexts) {
-            if (e.start >= start && e.end <= end) {
+            if (e.start >= start && e.end - 1 <= end) {
                 return true;
             }
         }
