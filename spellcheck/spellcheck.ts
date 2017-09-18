@@ -69,7 +69,7 @@ function filterErrors(errors: IDetectedMisspelling[], corpusText: string): IDete
         let match: RegExpExecArray | null;
         // tslint:disable-next-line:no-conditional-assignment
         while ((match = regex.exec(text)) !== null) {
-            regexMatches.push({start: match.index, end: match.index + match[0].length});
+            regexMatches.push({start: match.index, end: match.index + match[1].length});
         }
         return regexMatches;
     }
@@ -83,7 +83,7 @@ function filterErrors(errors: IDetectedMisspelling[], corpusText: string): IDete
     function findTextToSkip(text: string): ITextSection[] {
         return findRegexMatches(
             text,
-            /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g,
+            /(https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))/g,
         );
     }
 
