@@ -26,10 +26,11 @@ interface IDetectedMisspelling {
     readonly end: number;
 }
 interface ILineBreaks extends Array<number> {}
-interface ISkipTexts extends Array<{
+
+interface ITextSection {
     start: number;
     end: number;
-}> {}
+}
 
 function detectEncoding(buffer: Buffer): { encoding: string, confidence: number } {
     return jschardet.detect(buffer);
@@ -71,13 +72,23 @@ function toMisspellings(detected: IDetectedMisspelling[], corpusText: string): I
 
 function filterErrors(errors: IDetectedMisspelling[], corpusText: string): IDetectedMisspelling[] {
     const skipTexts = findTextToSkip(corpusText);
+    const includeTexts = findTextToInclude(corpusText);
     return errors.filter((e) => {
         for (const {start, end} of skipTexts) {
             if (e.start >= start && e.end <= end) {
                 return false;
             }
         }
-        return true;
+        if (!includeTexts) {
+            return true;
+        }
+        for (const {start, end} of includeTexts) {
+            if (e.start >= start && e.end <= end) {
+                return true;
+            }
+        }
+
+        return false;
     });
 }
 
@@ -90,9 +101,24 @@ function spellcheck(corpusText: string): IMisspelling[] {
     return misspellings;
 }
 
-function findTextToSkip(text: string): ISkipTexts {
+function findTextToInclude(text: string): ITextSection[] | null {
+    const includeRegexString: string = tl.getInput("includeRegexString", false);
+    if (!includeRegexString) {
+        return null;
+    }
+    const includeTexts: ITextSection[] = [];
+    const regex = new RegExp(includeRegexString, "g");
+    let match: RegExpExecArray | null;
+    // tslint:disable-next-line:no-conditional-assignment
+    while ((match = regex.exec(text)) !== null) {
+        includeTexts.push({start: match.index, end: match.index + match[0].length});
+    }
+    return includeTexts;
+}
+
+function findTextToSkip(text: string): ITextSection[] {
     // TODO use library here
-    const skipTexts: ISkipTexts = [];
+    const skipTexts: ITextSection[] = [];
     const regex = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g;
     let match: RegExpExecArray | null;
     // tslint:disable-next-line:no-conditional-assignment
@@ -133,9 +159,7 @@ async function run(): Promise<void> {
     try {
         // get task parameters
         const fileGlob: string = tl.getInput("files", true);
-        // const includeRegexString: string = tl.getInput("includeRegexString", false);
 
-        tl.setResult(tl.TaskResult.Succeeded, "No spelling errors");
         const files = glob.sync(fileGlob);
 
         Q.all(files.map((f) => checkFile(f))).then(processErrors);
