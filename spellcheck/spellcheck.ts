@@ -5,13 +5,6 @@ import tl = require("vsts-task-lib/task");
 import jschardet = require("jschardet");
 import SpellChecker = require("spellchecker");
 
-// TODO create configuration for this
-{
-    SpellChecker.add("TODO");
-    SpellChecker.add("readme");
-    SpellChecker.add("Chakra");
-}
-
 interface IFileErrors {
     readonly filePath: string;
     readonly misspellings: IMisspelling[];
@@ -90,7 +83,7 @@ function filterErrors(errors: IDetectedMisspelling[], corpusText: string): IDete
     function findTextToSkip(text: string): ITextSection[] {
         return findRegexMatches(
             text,
-            /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g
+            /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g,
         );
     }
 
@@ -122,10 +115,10 @@ function spellcheck(corpusText: string): IMisspelling[] {
     const misspellings = toMisspellings(filteredErrors, corpusText);
     return misspellings;
 }
+function detectEncoding(b: Buffer): { encoding: string, confidence: number } {
+    return jschardet.detect(b);
+}
 async function checkFile(filePath: string): Promise<IFileErrors> {
-    function detectEncoding(b: Buffer): { encoding: string, confidence: number } {
-        return jschardet.detect(b);
-    }
     const buffer = fs.readFileSync(filePath);
     const {encoding} = detectEncoding(buffer);
     const fileText = fs.readFileSync(filePath, {encoding});
@@ -153,7 +146,23 @@ async function processErrors(errors: IFileErrors[]): Promise<void> {
 }
 
 async function run(): Promise<void> {
+    function loadWhitelistedWords(): void {
+        const wordsFile = tl.getPathInput("whitelistedWords");
+        const stats = fs.lstatSync(wordsFile);
+        if (!stats.isFile()) {
+            return;
+        }
+        const blob = fs.readFileSync(wordsFile);
+        const {encoding} = detectEncoding(blob);
+        const words = fs.readFileSync(wordsFile, {encoding})
+            .split(/\s*\r?\n/)
+            .filter((a) => a);
+        for (const word of words) {
+            SpellChecker.add(word);
+        }
+    }
     try {
+        loadWhitelistedWords();
         // get task parameters
         const fileGlob: string = tl.getInput("files", true);
 
