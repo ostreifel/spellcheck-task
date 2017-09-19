@@ -1,32 +1,16 @@
 ## Spellcheck Task ##
 
-Spellcheck specified files
+Spellcheck files with a specified glob. Whitelist known good words with the file in the source repository.
 
 ### Quick steps to get started ###
+Find the spell check task in the test category or from the search box.  
+![](/static/images/add_task.png)  
+Configure the match glob and if desired the word whitelist and inclusion regex.  
+![](/static/images/configure.png)
 
-![](/static/images/Screen1.png)
+### Phasing in Spellchecking
+Phase spellchecking of larger projects by marking the spellcheck as only a warning until the errors can be corrected and the test passage is made mandatory.  
+![](/static/images/continue.png)
 
-//TODO:Add a walk-through of key features to your extension. See [Roll-up Board](https://marketplace.visualstudio.com/items?itemName=ms-devlabs.RollUpBoard) for an example.
-
-### Known issue(s)
-
-- None
-
-### Learn More
-
-The [source](//TODO:Point to your repo or remove this) to this extension is available. Feel free to take, fork, and extend.
-
-//TODO:Update the 3rd party notices file or remove the view notices reference.
-[View Notices](https://marketplace.visualstudio.com/_apis/public/gallery/publisher/ottostreifel/extension/spellcheck-task/latest/assetbyname/ThirdPartyNotices.txt) for third party software included in this extension.
-
-### Minimum supported environments ###
-
-- Visual Studio Team Services
-
-### Contributors ###
-
-We thank the following contributor(s) for this extension: @TODO@-Add and credit contributors.
-
-### Feedback ###
-- Add a review below.
-- Send us an [email](mailto://TODO:Add your email address).
+# Version History
+(09//2017) 1.0.1 Initial Release  

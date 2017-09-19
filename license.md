@@ -1,6 +1,6 @@
 Spellcheck Task
 
-Copyright (c) //TODO:Add owners name
+Copyright (c) Otto Streifel
 
 All rights reserved.
 
