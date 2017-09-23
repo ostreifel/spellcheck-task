@@ -3,10 +3,11 @@ import * as glob from "glob";
 import * as Q from "q";
 import tl = require("vsts-task-lib/task");
 import jschardet = require("jschardet");
-// import { spawnSync } from "child_process";
-import * as os from "os";
-// import * as path from "path";
-let SpellChecker;
+import { getLanguagesForExt } from "cspell/dist/LanguageIds";
+import { getDefaultSettings } from "cspell/dist/Settings/DefaultSettings";
+import { combineTextAndLanguageSettings } from "cspell/dist/Settings/TextDocumentSettings";
+import { validateText } from "cspell/dist/Validator";
+import * as path from "path";
 
 interface IFileErrors {
     readonly filePath: string;
@@ -20,6 +21,7 @@ interface IMisspelling {
 interface IDetectedMisspelling {
     readonly start: number;
     readonly end: number;
+    readonly text: string;
 }
 function toMisspellings(detected: IDetectedMisspelling[], corpusText: string): IMisspelling[] {
     interface ILineBreaks extends Array<number> {}
@@ -44,10 +46,10 @@ function toMisspellings(detected: IDetectedMisspelling[], corpusText: string): I
     const textLineBreaks = findLineBreaks(corpusText);
     tl.debug(`linebreaks ${JSON.stringify(textLineBreaks)}`);
     const misspellings: IMisspelling[] = [];
-    for (const {start, end} of detected) {
+    for (const {start, text} of detected) {
         const {line, column} = posToLineColumn(textLineBreaks, start);
         misspellings.push(
-            {line, column, text: corpusText.substr(start, end - start)},
+            {line, column, text},
         );
     }
     return misspellings;
@@ -56,10 +58,10 @@ function toMisspellings(detected: IDetectedMisspelling[], corpusText: string): I
 // npm install --global --production windows-build-tools
 
 function filterErrors(errors: IDetectedMisspelling[], corpusText: string): IDetectedMisspelling[] {
-
     interface ITextSection {
         start: number;
         end: number;
+        text: string;
     }
 
     function findRegexMatches(text: string, search: string | null): ITextSection[] | null;
@@ -73,7 +75,7 @@ function filterErrors(errors: IDetectedMisspelling[], corpusText: string): IDete
         let match: RegExpExecArray | null;
         // tslint:disable-next-line:no-conditional-assignment
         while ((match = regex.exec(text)) !== null) {
-            regexMatches.push({start: match.index, end: match.index + match[1].length});
+            regexMatches.push({start: match.index, end: match.index + match[1].length, text: match[1]});
         }
         return regexMatches;
     }
@@ -84,24 +86,15 @@ function filterErrors(errors: IDetectedMisspelling[], corpusText: string): IDete
         );
     }
 
-    function findTextToSkip(text: string): ITextSection[] {
-        return findRegexMatches(
-            text,
-            /(https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b(?:[-a-zA-Z0-9@:%_\+.~#?&//=]*))/g,
-        );
-    }
-
-    const skipTexts = findTextToSkip(corpusText);
     const includeTexts = findTextToInclude(corpusText);
-    tl.debug(`Skip texts ${JSON.stringify(skipTexts)}`);
     tl.debug(`Include texts ${JSON.stringify(includeTexts)}`);
     tl.debug(`errors ${JSON.stringify(errors)}`);
     return errors.filter((e) => {
-        for (const {start, end} of skipTexts) {
-            if (e.start >= start && e.end - 1 <= end) {
-                return false;
-            }
-        }
+        // for (const {start, end} of skipTexts) {
+        //     if (e.start >= start && e.end - 1 <= end) {
+        //         return false;
+        //     }
+        // }
         if (!includeTexts) {
             return true;
         }
@@ -115,9 +108,18 @@ function filterErrors(errors: IDetectedMisspelling[], corpusText: string): IDete
     });
 }
 
-// TODO this requires windows
-function spellcheck(corpusText: string): IMisspelling[] {
-    const errors: IDetectedMisspelling[] = SpellChecker.checkSpelling(corpusText);
+async function spellcheck(corpusText: string, ext: string, userWords: string[]): Promise<IMisspelling[]> {
+    function getSettings() {
+        const settings = getDefaultSettings();
+        if (!settings.userWords) {
+            settings.userWords = [];
+        }
+        settings.userWords.push(...userWords);
+        return combineTextAndLanguageSettings(settings, corpusText, getLanguagesForExt(ext));
+    }
+    const errors: IDetectedMisspelling[] = (await validateText(corpusText, getSettings())).map(
+        ({offset, text}): IDetectedMisspelling => ({start: offset, end: offset + text.length, text}),
+    );
     const filteredErrors = filterErrors(errors, corpusText);
     const misspellings = toMisspellings(filteredErrors, corpusText);
     return misspellings;
@@ -125,13 +127,13 @@ function spellcheck(corpusText: string): IMisspelling[] {
 function detectEncoding(b: Buffer): { encoding: string, confidence: number } {
     return jschardet.detect(b);
 }
-async function checkFile(filePath: string): Promise<IFileErrors> {
+async function checkFile(filePath: string, userWords: string[]): Promise<IFileErrors> {
     const buffer = fs.readFileSync(filePath);
     const {encoding} = detectEncoding(buffer);
     const fileText = fs.readFileSync(filePath, {encoding});
     tl.debug(`${filePath} encoding ${encoding}, ${fileText.length} bytes`);
 
-    const misspellings = spellcheck(fileText);
+    const misspellings = await spellcheck(fileText, path.extname(filePath), userWords);
     return {filePath, misspellings};
 }
 
@@ -153,62 +155,26 @@ async function processErrors(errors: IFileErrors[]): Promise<void> {
 }
 
 async function run(): Promise<void> {
-    /** some of the libraries have binary dependencies and need to be swapped out
-     * if this is run on a different platform
-     */
-    function install() {
-        // This doesnt work, maybe fix later
-        if (os.type() !== "Windows_NT") {
-            tl.debug("dirname");
-            tl.debug(__dirname);
-            tl.debug("cwd");
-            tl.debug(tl.cwd());
-            tl.debug(`os info: ${os.type()} ${os.arch()} ${os.platform()} ${os.release()}`);
-            // tl.rmRF(path.join(__dirname, "node_modules"));
-            // tl.debug("clear cache");
-            // spawnSync("npm", ["cache", "clean"], {
-            //     stdio: "inherit",
-            // });
-            // tl.debug("updating");
-            // spawnSync("npm", ["update"], {
-            //     stdio: "inherit",
-            // });
-            // tl.debug("installing");
-            // try {
-            //     spawnSync("npm", ["i"], {
-            //         cwd: __dirname,
-            //         stdio: "inherit",
-            //     });
-            // } catch (e) {
-            //     tl.debug(e);
-            // }
-        }
-        SpellChecker = require("spellchecker");
-    }
-    function loadWhitelistedWords(): void {
+    function loadWhitelistedWords(): string[] {
         const wordsFile = tl.getPathInput("whitelistedWords");
         const stats = fs.lstatSync(wordsFile);
         if (!stats.isFile()) {
-            return;
+            return [];
         }
         const blob = fs.readFileSync(wordsFile);
         const {encoding} = detectEncoding(blob);
         const words = fs.readFileSync(wordsFile, {encoding})
             .split(/\s*\r?\n/)
             .filter((a) => a);
-        for (const word of words) {
-            SpellChecker.add(word);
-        }
+        return words;
     }
     try {
-        install();
-        loadWhitelistedWords();
-        // get task parameters
+        const userWords = loadWhitelistedWords();
         const fileGlob: string = tl.getInput("files", true);
 
         const files = glob.sync(fileGlob);
 
-        Q.all(files.map((f) => checkFile(f))).then(processErrors);
+        Q.all(files.map((f) => checkFile(f, userWords))).then(processErrors);
     } catch (err) {
         console.log("err", err);
         tl.setResult(tl.TaskResult.Failed, err.message);
