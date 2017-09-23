@@ -3,7 +3,10 @@ import * as glob from "glob";
 import * as Q from "q";
 import tl = require("vsts-task-lib/task");
 import jschardet = require("jschardet");
-import SpellChecker = require("spellchecker");
+// import { spawnSync } from "child_process";
+import * as os from "os";
+// import * as path from "path";
+let SpellChecker;
 
 interface IFileErrors {
     readonly filePath: string;
@@ -150,6 +153,38 @@ async function processErrors(errors: IFileErrors[]): Promise<void> {
 }
 
 async function run(): Promise<void> {
+    /** some of the libraries have binary dependencies and need to be swapped out
+     * if this is run on a different platform
+     */
+    function install() {
+        // This doesnt work, maybe fix later
+        if (os.type() !== "Windows_NT") {
+            tl.debug("dirname");
+            tl.debug(__dirname);
+            tl.debug("cwd");
+            tl.debug(tl.cwd());
+            tl.debug(`os info: ${os.type()} ${os.arch()} ${os.platform()} ${os.release()}`);
+            // tl.rmRF(path.join(__dirname, "node_modules"));
+            // tl.debug("clear cache");
+            // spawnSync("npm", ["cache", "clean"], {
+            //     stdio: "inherit",
+            // });
+            // tl.debug("updating");
+            // spawnSync("npm", ["update"], {
+            //     stdio: "inherit",
+            // });
+            // tl.debug("installing");
+            // try {
+            //     spawnSync("npm", ["i"], {
+            //         cwd: __dirname,
+            //         stdio: "inherit",
+            //     });
+            // } catch (e) {
+            //     tl.debug(e);
+            // }
+        }
+        SpellChecker = require("spellchecker");
+    }
     function loadWhitelistedWords(): void {
         const wordsFile = tl.getPathInput("whitelistedWords");
         const stats = fs.lstatSync(wordsFile);
@@ -166,6 +201,7 @@ async function run(): Promise<void> {
         }
     }
     try {
+        install();
         loadWhitelistedWords();
         // get task parameters
         const fileGlob: string = tl.getInput("files", true);

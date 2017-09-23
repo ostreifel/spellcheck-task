@@ -1,7 +1,7 @@
 {
   "manifestVersion": 1,
   "id": "spellcheck-task",
-  "version": "0.1.116",
+  "version": "0.1.132",
   "name": "Spellcheck Task",
   "scopes": [],
   "description": "Spellcheck specified files",
@@ -35,7 +35,7 @@
   "content": {
     "license": {
       "path": "license.md"
-    },
+    },  
     "details": {
       "path": "overview.md"
     }
