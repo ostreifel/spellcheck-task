@@ -6,7 +6,7 @@ import jschardet = require("jschardet");
 import { getLanguagesForExt } from "cspell/dist/LanguageIds";
 import { getDefaultSettings } from "cspell/dist/Settings/DefaultSettings";
 import { combineTextAndLanguageSettings } from "cspell/dist/Settings/TextDocumentSettings";
-import { validateText } from "cspell/dist/Validator";
+import { validateText } from "cspell/dist/validator";
 import * as path from "path";
 
 interface IFileErrors {
@@ -38,7 +38,7 @@ function toMisspellings(detected: IDetectedMisspelling[], corpusText: string): I
         for (let i = linebreaks.length - 1; i >= 0; i--) {
             const linePos = linebreaks[i];
             if (linePos < pos) {
-                return {line: i + 2, column: pos - linePos};
+                return {line: i + 2, column: pos - linePos + 1};
             }
         }
         return { line: 1, column: pos + 1 };

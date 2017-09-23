@@ -9,7 +9,7 @@
    "version": {
       "Major": 2,
       "Minor": 1,
-      "Patch": 75
+      "Patch": 78
    },
    "demands": [],
    "inputs": [
@@ -27,7 +27,7 @@
          "label": "Inclusion regex",
          "defaultValue": "",
          "required": false,
-         "helpMarkDown": "Javascript regex string of the text to include. Example: \"//(.*)(?:\n|$)\""
+         "helpMarkDown": "Javascript regex string of the text to include. Example: \"//(.*)(?:\\n|$)\""
       },
       {
          "name": "whitelistedWords",
