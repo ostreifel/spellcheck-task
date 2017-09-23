@@ -29,7 +29,6 @@ bld/
 node_modules
 .vscode
 *.vsix
-dev.json
 
 
 **/*.js
