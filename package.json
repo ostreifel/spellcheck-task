@@ -3,6 +3,7 @@
     "package-dev": "npm run clean  && npm run compile  && tfx extension create --rev-version --overrides-file dev.json",
     "package": "npm run clean  && npm run compile  && tfx extension create  --rev-version",
     "gallery-publish-dev": "npm run clean && npm run compile && tfx extension publish --rev-version --overrides-file dev.json",
+    "gallery-publish": "npm run clean && npm run compile && tfx extension publish --rev-version",
     "clean": "rimraf ./*.vsix",
     "compile": "tsc -p .",
     "install-task-lib": "cd spellcheck && npm install --save-dev"

@@ -1,6 +1,6 @@
 ## Spellcheck Task ##
 
-Spellcheck files with a specified glob. Whitelist known good words with the file in the source repository.
+Spellcheck files with a specified glob. Optionally whitelist known good words with a file in the source repository.
 
 ### Quick steps to get started ###
 Find the spell check task in the test category or from the search box.  

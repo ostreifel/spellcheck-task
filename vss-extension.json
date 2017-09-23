@@ -1,14 +1,12 @@
 {
   "manifestVersion": 1,
   "id": "spellcheck-task",
-  "version": "0.1.146",
+  "version": "1.0.1",
   "name": "Spellcheck Task",
   "scopes": [],
   "description": "Spellcheck specified files",
   "publisher": "ottostreifel",
-  "galleryFlags": [
-    "Preview"
-  ],
+  "public": true,
   "icons": {
     "default": "static/images/logo.png"
   },
