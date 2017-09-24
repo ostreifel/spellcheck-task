@@ -1,7 +1,7 @@
 {
   "manifestVersion": 1,
   "id": "spellcheck-task",
-  "version": "1.0.1",
+  "version": "1.0.6",
   "name": "Spellcheck Task",
   "scopes": [],
   "description": "Spellcheck specified files",
@@ -20,15 +20,13 @@
   ],
   "tags": [
     "Spellcheck",
-    "Sample"
+    "spelling",
+    "windows",
+    "linux",
+    "test"
   ],
   "categories": [
     "Build and release"
-  ],
-  "screenshots": [
-    {
-      "path": "static/images/Screen1.png"
-    }
   ],
   "content": {
     "license": {
@@ -49,6 +47,10 @@
   "files": [
     {
       "path": "spellcheck"
+    },
+    {
+        "path": "static",
+        "addressable": true
     }
   ],
   "contributions": [
